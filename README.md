@@ -1,39 +1,91 @@
 # In-memory Photo Gallery
 
-A small Java Swing application for practicing unit testing with JUnit 5. Each registered account has its own gallery. Accounts and image entries are held in memory only and disappear when the application closes. Image files remain where the user selected them; the gallery stores their paths, not copies.
+This Java Swing application is a small photo-gallery manager and a practice project for learning JUnit 5. Users can create an account and manage a personal gallery during the current run of the program. Gallery data is kept in memory and is lost when the program closes. Image files are not copied; the gallery stores their paths.
 
-## Run
+## What the application can do
 
-Requires Java 17 and Maven:
+- Register an account and log in.
+- Add image files with a title and tags.
+- Search images by title and/or tag.
+- Sort images by title or date added.
+- Mark images as favorites and show favorites only.
+- Edit image titles and tags, or delete images.
+- Keep each user's gallery associated with that account.
+
+## Assignment
+
+Write JUnit 5 unit tests to check the application's behavior. Focus on the behavior and rules of the gallery rather than testing Swing components directly. The `GalleryService` and `GalleryImage` classes are useful places to start because most of their behavior can be tested without opening a window.
+
+Think about successful operations, invalid input, boundary values, repeated operations, and interactions between multiple users. For example, consider what should happen when:
+
+- A user registers with a username at the minimum allowed length.
+- A title or image path is blank.
+- A tag contains different capitalization or surrounding whitespace.
+- A user searches with more than one filter at the same time.
+- An image is edited, favorited, or deleted.
+- Two users have entries for the same image path.
+- A returned collection is read or modified by the caller.
+
+Add your tests under `src/test/java` and run them with:
 
 ```shell
 mvn test
-mvn package
-java -cp target/classes org.example.Main
 ```
 
-Register a username (at least 3 characters) and password (at least 6 characters), then add image files, assign comma-separated tags, search by title and/or tag, mark favorites, show favorites only, and delete selected images. Passwords are salted and hashed while the application is running.
+## JUnit 5 examples
 
-## Main classes
+Use `@BeforeEach` to create fresh test state and `@Test` for a single behavior:
 
-- `Main` starts the application on Swing's event-dispatch thread.
-- `GalleryFrame` builds the Swing screens and connects user actions to the gallery service.
-- `GalleryService` manages in-memory accounts and galleries. It validates registration, checks logins, and supports adding, searching, favoriting, and removing images.
-- `GalleryImage` represents one gallery entry, including its title, file path, tags, and favorite status.
+```java
+import org.example.GalleryService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-## Student testing exercise
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-Write JUnit 5 unit tests that aim to cover all the application's functionalities. Focus primarily on `GalleryService` and `GalleryImage`, so tests can run without opening the Swing interface. Consider normal behavior, invalid inputs, boundary cases, and interactions between multiple users. For example, test registration and login, gallery ownership, adding and removing images, tag and title searches, favorites, and the contents and mutability of returned collections.
+class GalleryServiceTest {
+    private GalleryService gallery;
 
-## Useful JUnit 5 features
+    @BeforeEach
+    void setUp() {
+        gallery = new GalleryService();
+    }
 
-The starter tests in `src/test/java/org/example/GalleryServiceTest.java` demonstrate:
+    @Test
+    void registeredUserCanLogInWithTheCorrectPassword() {
+        gallery.register("alice", "secret1");
 
-- `@Test` for an individual test and `@BeforeEach` to set up fresh state.
-- `@ParameterizedTest` with `@ValueSource` to run one test with multiple inputs.
-- `assertEquals` to compare expected and actual values.
-- `assertTrue` and `assertFalse` to check boolean conditions.
-- `assertThrows` to verify that invalid operations throw the expected exception.
-- `assertAll` to group related assertions so each one is evaluated.
+        assertTrue(gallery.login("alice", "secret1"));
+        assertFalse(gallery.login("alice", "wrong-password"));
+    }
+}
+```
 
-Other useful assertions include `assertNull`, `assertNotNull`, `assertNotEquals`, and `assertDoesNotThrow`. Run the suite with `mvn test`.
+Use `assertThrows` to check validation behavior:
+
+```java
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@Test
+void registrationRejectsShortUsernames() {
+    assertThrows(IllegalArgumentException.class,
+            () -> gallery.register("ab", "secret1"));
+}
+```
+
+Use a parameterized test to check several invalid values with one test method:
+
+```java
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+@ParameterizedTest
+@ValueSource(strings = {"", " ", "ab"})
+void rejectsBlankOrShortUsernames(String username) {
+    assertThrows(IllegalArgumentException.class,
+            () -> gallery.register(username, "secret1"));
+}
+```
+
+Other useful assertions include `assertEquals`, `assertNotEquals`, `assertNull`, `assertNotNull`, `assertTrue`, `assertFalse`, `assertAll`, and `assertDoesNotThrow`.

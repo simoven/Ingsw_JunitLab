@@ -7,6 +7,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -81,6 +82,14 @@ public class GalleryService {
 
     public List<GalleryImage> searchImages(
             String username, String titleQuery, String tag, boolean favoritesOnly) {
+        return searchImages(username, titleQuery, tag, favoritesOnly, ImageSortOrder.TITLE_ASCENDING);
+    }
+
+    public List<GalleryImage> searchImages(
+            String username, String titleQuery, String tag, boolean favoritesOnly, ImageSortOrder sortOrder) {
+        if (sortOrder == null) {
+            throw new IllegalArgumentException("Sort order cannot be null");
+        }
         String normalizedTitle = titleQuery == null ? "" : titleQuery.trim().toLowerCase(Locale.ROOT);
         String normalizedTag = tag == null ? "" : tag.trim().toLowerCase(Locale.ROOT);
         return requireAccount(username).images.stream()
@@ -88,7 +97,45 @@ public class GalleryService {
                         || image.getTitle().toLowerCase(Locale.ROOT).contains(normalizedTitle))
                 .filter(image -> normalizedTag.isEmpty() || image.getTags().contains(normalizedTag))
                 .filter(image -> !favoritesOnly || image.isFavorite())
+                .sorted(comparatorFor(sortOrder))
                 .toList();
+    }
+
+    public boolean editImage(String username, UUID imageId, String title, Set<String> tags) {
+        if (imageId == null) {
+            throw new IllegalArgumentException("Image id cannot be null");
+        }
+        Account owner = requireAccount(username);
+        GalleryImage image = owner.images.stream()
+                .filter(candidate -> candidate.getId().equals(imageId))
+                .findFirst()
+                .orElse(null);
+
+        if (image == null) {
+            return false;
+        }
+
+        GalleryImage editedDetails = new GalleryImage(title, image.getImagePath(), tags);
+        String imagePath = image.getImagePath();
+        for (Account account : accounts.values()) {
+            account.images.stream()
+                    .filter(candidate -> candidate.getImagePath().equals(imagePath))
+                    .forEach(candidate -> candidate.updateDetails(editedDetails.getTitle(), editedDetails.getTags()));
+        }
+        return true;
+    }
+
+    private static Comparator<GalleryImage> comparatorFor(ImageSortOrder sortOrder) {
+        return switch (sortOrder) {
+            case TITLE_ASCENDING -> Comparator.comparing(
+                            GalleryImage::getTitle, String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(GalleryImage::getTitle);
+            case TITLE_DESCENDING -> Comparator.comparing(
+                            GalleryImage::getTitle, String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(GalleryImage::getTitle)
+                    .reversed();
+            case NEWEST_FIRST -> Comparator.comparing(GalleryImage::getAddedAt).reversed();
+        };
     }
 
     public boolean setFavorite(String username, UUID imageId, boolean favorite) {

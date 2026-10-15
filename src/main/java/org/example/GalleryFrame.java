@@ -6,6 +6,7 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -50,6 +51,9 @@ public class GalleryFrame extends JFrame {
     private final JTextField tagFilterField = new JTextField(14);
     private final JCheckBox favoritesOnlyCheckBox = new JCheckBox("Favorites only");
     private final JButton favoriteButton = new JButton("☆ Add to favorites");
+    private final JButton editButton = new JButton("Edit selected");
+    private final JComboBox<ImageSortOrder> sortOrderComboBox =
+            new JComboBox<>(ImageSortOrder.values());
     private String currentUsername;
 
     public GalleryFrame(GalleryService galleryService) {
@@ -117,8 +121,14 @@ public class GalleryFrame extends JFrame {
         JButton logoutButton = new JButton("Log out");
         addButton.addActionListener(event -> addImage());
         deleteButton.addActionListener(event -> deleteSelectedImage());
+        editButton.addActionListener(event -> editSelectedImage());
         favoriteButton.addActionListener(event -> toggleSelectedFavorite());
         searchButton.addActionListener(event -> applyFilters());
+        sortOrderComboBox.addActionListener(event -> {
+            if (currentUsername != null) {
+                applyFilters();
+            }
+        });
         clearButton.addActionListener(event -> {
             titleSearchField.setText("");
             tagFilterField.setText("");
@@ -127,6 +137,7 @@ public class GalleryFrame extends JFrame {
         });
         logoutButton.addActionListener(event -> logOut());
         actions.add(addButton);
+        actions.add(editButton);
         actions.add(deleteButton);
         actions.add(favoriteButton);
         actions.add(logoutButton);
@@ -137,6 +148,8 @@ public class GalleryFrame extends JFrame {
         filters.add(new JLabel("Tag:"));
         filters.add(tagFilterField);
         filters.add(favoritesOnlyCheckBox);
+        filters.add(new JLabel("Sort:"));
+        filters.add(sortOrderComboBox);
         filters.add(searchButton);
         filters.add(clearButton);
         controls.add(actions);
@@ -256,11 +269,44 @@ public class GalleryFrame extends JFrame {
         Set<String> tags = new LinkedHashSet<>();
         for (String tag : tagsField.getText().split(",")) {
             if (!tag.isBlank()) {
-                tags.add(tag.trim());
+                tags.add(tag);
             }
         }
         try {
             galleryService.addImage(currentUsername, titleField.getText(), selectedFile.getAbsolutePath(), tags);
+            applyFilters();
+        } catch (IllegalArgumentException exception) {
+            showError(exception.getMessage());
+        }
+    }
+
+    private void editSelectedImage() {
+        GalleryImage selectedImage = imageList.getSelectedValue();
+        if (selectedImage == null) {
+            showError("Select an image to edit.");
+            return;
+        }
+
+        JTextField titleField = new JTextField(selectedImage.getTitle());
+        JTextField tagsField = new JTextField(String.join(", ", selectedImage.getTags()));
+        JPanel form = new JPanel(new GridLayout(0, 1, 4, 4));
+        form.add(new JLabel("Title"));
+        form.add(titleField);
+        form.add(new JLabel("Tags, separated by commas"));
+        form.add(tagsField);
+        if (JOptionPane.showConfirmDialog(this, form, "Edit image",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        Set<String> tags = new LinkedHashSet<>();
+        for (String tag : tagsField.getText().split(",")) {
+            if (!tag.isBlank()) {
+                tags.add(tag);
+            }
+        }
+        try {
+            galleryService.editImage(currentUsername, selectedImage.getId(), titleField.getText(), tags);
             applyFilters();
         } catch (IllegalArgumentException exception) {
             showError(exception.getMessage());
@@ -272,7 +318,8 @@ public class GalleryFrame extends JFrame {
                 currentUsername,
                 titleSearchField.getText(),
                 tagFilterField.getText(),
-                favoritesOnlyCheckBox.isSelected());
+                favoritesOnlyCheckBox.isSelected(),
+                (ImageSortOrder) sortOrderComboBox.getSelectedItem());
         refreshImages(filteredImages);
     }
 
@@ -299,6 +346,7 @@ public class GalleryFrame extends JFrame {
     private void updateFavoriteButton() {
         GalleryImage selectedImage = imageList.getSelectedValue();
         favoriteButton.setEnabled(selectedImage != null);
+        editButton.setEnabled(selectedImage != null);
         favoriteButton.setText(selectedImage != null && selectedImage.isFavorite()
                 ? "★ Remove from favorites"
                 : "☆ Add to favorites");

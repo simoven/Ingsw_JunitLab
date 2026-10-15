@@ -6,27 +6,22 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.time.Instant;
 
 public final class GalleryImage {
     private final UUID id;
-    private final String title;
+    private String title;
     private final String imagePath;
-    private final Set<String> tags;
+    private Set<String> tags;
     private boolean favorite;
+    private final Instant addedAt;
 
     public GalleryImage(String title, String imagePath, Set<String> tags) {
         this.id = UUID.randomUUID();
         this.title = requireText(title, "Title");
         this.imagePath = requireText(imagePath, "Image path");
-        Objects.requireNonNull(tags, "Tags cannot be null");
-
-        Set<String> normalizedTags = new LinkedHashSet<>();
-        for (String tag : tags) {
-            if (tag != null && !tag.isBlank()) {
-                normalizedTags.add(tag.trim().toLowerCase(Locale.ROOT));
-            }
-        }
-        this.tags = Collections.unmodifiableSet(normalizedTags);
+        this.tags = normalizeTags(tags);
+        this.addedAt = Instant.now();
     }
 
     private static String requireText(String value, String fieldName) {
@@ -34,6 +29,17 @@ public final class GalleryImage {
             throw new IllegalArgumentException(fieldName + " cannot be blank");
         }
         return value.trim();
+    }
+
+    private static Set<String> normalizeTags(Set<String> tags) {
+        Objects.requireNonNull(tags, "Tags cannot be null");
+        Set<String> normalizedTags = new LinkedHashSet<>();
+        for (String tag : tags) {
+            if (tag != null && !tag.isBlank()) {
+                normalizedTags.add(tag.toLowerCase(Locale.ROOT));
+            }
+        }
+        return Collections.unmodifiableSet(normalizedTags);
     }
 
     public UUID getId() {
@@ -48,6 +54,10 @@ public final class GalleryImage {
         return imagePath;
     }
 
+    public Instant getAddedAt() {
+        return addedAt;
+    }
+
     public Set<String> getTags() {
         return tags;
     }
@@ -58,5 +68,12 @@ public final class GalleryImage {
 
     void setFavorite(boolean favorite) {
         this.favorite = favorite;
+    }
+
+    void updateDetails(String title, Set<String> tags) {
+        String validatedTitle = requireText(title, "Title");
+        Set<String> normalizedTags = normalizeTags(tags);
+        this.title = validatedTitle;
+        this.tags = normalizedTags;
     }
 }
