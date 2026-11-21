@@ -34,7 +34,7 @@ Add your tests under `src/test/java` and run them with:
 mvn test
 ```
 
-## JUnit 5 examples
+## JUnit examples
 
 Use `@BeforeEach` to create fresh test state and `@Test` for a single behavior:
 
