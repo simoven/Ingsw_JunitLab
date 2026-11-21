@@ -16,6 +16,8 @@ This Java Swing application is a small photo-gallery manager and a practice proj
 
 Write JUnit 5 unit tests to check the application's behavior. Focus on the behavior and rules of the gallery rather than testing Swing components directly. The `GalleryService` and `GalleryImage` classes are useful places to start because most of their behavior can be tested without opening a window.
 
+The provided `GalleryServiceTest` shows examples for adding and removing images. Use it as a model for tests of other behaviors.
+
 Think about successful operations, invalid input, boundary values, repeated operations, and interactions between multiple users. For example, consider what should happen when:
 
 - A user registers with a username at the minimum allowed length.
