@@ -5,15 +5,7 @@ import javax.crypto.spec.PBEKeySpec;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class GalleryService {
     private static final int SALT_LENGTH = 16;
@@ -60,6 +52,19 @@ public class GalleryService {
         }
     }
 
+    /**
+     * Aggiunge una nuova immagine alla galleria dell'utente indicato.
+     * Il percorso viene memorizzato senza copiare il file.
+     *
+     * @param username nome dell'account a cui aggiungere l'immagine
+     * @param title titolo dell'immagine
+     * @param imagePath percorso del file immagine
+     * @param tags etichette associate all'immagine
+     * @return l'immagine creata e aggiunta alla galleria
+     * @throws IllegalArgumentException se l'account non esiste o se il nome utente,
+     *         il titolo o il percorso sono nulli o vuoti
+     * @throws NullPointerException se {@code tags} è null
+     */
     public GalleryImage addImage(String username, String title, String imagePath, Set<String> tags) {
         GalleryImage image = new GalleryImage(title, imagePath, tags);
         requireAccount(username).images.add(image);
@@ -152,11 +157,36 @@ public class GalleryService {
                 .orElse(false);
     }
 
+    /**
+     * Rimuove dalla galleria dell'utente l'immagine con l'ID indicato.
+     *
+     * @param username nome dell'account da cui rimuovere l'immagine
+     * @param imageId identificativo dell'immagine da rimuovere
+     * @return {@code true} se l'immagine era presente ed è stata rimossa,
+     *         {@code false} se non era presente nella galleria
+     * @throws IllegalArgumentException se {@code imageId} è null o se il nome utente
+     *         è nullo, vuoto o non identifica un account
+     */
     public boolean removeImage(String username, UUID imageId) {
         if (imageId == null) {
             throw new IllegalArgumentException("Image id cannot be null");
         }
-        return requireAccount(username).images.removeIf(image -> image.getId().equals(imageId));
+
+        Iterator<GalleryImage> iterator =
+                requireAccount(username).images.iterator();
+
+        boolean removed = false;
+
+        while (iterator.hasNext()) {
+            GalleryImage image = iterator.next();
+
+            if (image.getId().equals(imageId)) {
+                iterator.remove();
+                removed = true;
+            }
+        }
+
+        return removed;
     }
 
     private Account requireAccount(String username) {
