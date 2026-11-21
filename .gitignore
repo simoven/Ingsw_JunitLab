@@ -39,5 +39,5 @@ build/
 .DS_Store
 
 ### Tests
-src/test/**
+
 TEACHER_README.md
