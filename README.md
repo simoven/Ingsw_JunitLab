@@ -1,6 +1,6 @@
 # In-memory Photo Gallery
 
-This Java Swing application is a small photo-gallery manager and a practice project for learning JUnit 5. Users can create an account and manage a personal gallery during the current run of the program. Gallery data is kept in memory and is lost when the program closes. Image files are not copied; the gallery stores their paths.
+This Java Swing application is a small photo-gallery manager and a practice project for learning JUnit. Users can create an account and manage a personal gallery during the current run of the program. Gallery data is kept in memory and is lost when the program closes. Image files are not copied; the gallery stores their paths.
 
 ## What the application can do
 
@@ -14,7 +14,7 @@ This Java Swing application is a small photo-gallery manager and a practice proj
 
 ## Assignment
 
-Write JUnit 5 unit tests to check the application's behavior. Focus on the behavior and rules of the gallery rather than testing Swing components directly. The `GalleryService` and `GalleryImage` classes are useful places to start because most of their behavior can be tested without opening a window.
+Write JUnit unit tests to check the application's behavior. Focus on the behavior and rules of the gallery rather than testing Swing components directly. The `GalleryService` and `GalleryImage` classes are useful places to start because most of their behavior can be tested without opening a window.
 
 The provided `GalleryServiceTest` shows examples for adding and removing images. Use it as a model for tests of other behaviors.
 
